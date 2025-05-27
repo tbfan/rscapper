@@ -390,12 +390,39 @@ def download_comment_image(url, save_path, author_name, image_index):
         print(f"Error downloading comment image from {url}: {str(e)}")
         return None
 
+def format_post_as_text(post_data):
+    """Format post data as a readable text file."""
+    text = []
+    text.append(f"ID: {post_data['id']}")
+    text.append(f"Author: {post_data['author']}")
+    text.append(f"Title: {post_data['title']}")
+    text.append(f"Title (Chinese): {post_data['title_zh']}")
+    text.append(f"Created UTC: {post_data['created_utc']}")
+    text.append(f"Number of Comments: {post_data['num_comments']}")
+    text.append("\nOriginal Text:")
+    text.append(post_data['selftext'] if post_data['selftext'] else "No text content")
+    text.append("\nTranslated Text:")
+    text.append(post_data['selftext_zh'] if post_data['selftext_zh'] else "No translation available")
+    
+    if post_data['psr_bot_details']:
+        text.append("\nPSR-Bot Details:")
+        for key, value in post_data['psr_bot_details'].items():
+            if value:  # Only include non-None values
+                text.append(f"{key.replace('_', ' ').title()}: {value}")
+    
+    return "\n".join(text)
+
 def save_post_data(post_data, post_dir, dev_mode=False):
     """Save post data and download associated images."""
-    # Save post data
+    # Save post data as JSON
     post_file = os.path.join(post_dir, 'post_data.json')
     with open(post_file, 'w', encoding='utf-8') as f:
         json.dump(post_data, f, indent=4, ensure_ascii=False)
+    
+    # Save post data as TXT
+    post_txt_file = os.path.join(post_dir, 'post_data.txt')
+    with open(post_txt_file, 'w', encoding='utf-8') as f:
+        f.write(format_post_as_text(post_data))
     
     # Set to store image filenames for this post
     existing_filenames = set()
