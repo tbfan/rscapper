@@ -12,9 +12,76 @@ import re
 import hashlib
 from io import BytesIO
 import openai
+import argparse
+
+"""
+Reddit Scraper for r/PhotoshopRequest
+
+This script scrapes posts from r/PhotoshopRequest subreddit, focusing on paid requests.
+It downloads post images, comment images, and translates post content to Chinese.
+
+Features:
+- Scrapes posts with "Paid" flair
+- Downloads post images and comment images
+- Extracts PSR-Bot details (request type, status, deadlines)
+- Translates post title and content to Chinese
+- Organizes data in date-based directory structure
+- Supports development mode for testing
+
+Requirements:
+- Python 3.7+
+- Required packages: praw, python-dotenv, requests, openai
+- Reddit API credentials (client_id, client_secret, user_agent)
+- OpenAI API key
+
+Environment Variables (.env file):
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+REDDIT_USER_AGENT=your_user_agent
+OPENAI_API_KEY=your_openai_api_key
+
+Usage:
+    python main.py [--output OUTPUT_DIR] [--dev-mode]
+
+Arguments:
+    --output, -o    Output directory path (default: data/)
+    --dev-mode, -d  Run in development mode (limit to 3 comments)
+
+Output Structure:
+    output_dir/
+        YYYY-MM-DD/
+            post_id/
+                post_data.json
+                post_image_01.jpg
+                comments/
+                    username1_image_01.jpg
+                    ...
+
+Author: Steve Fan
+Date: 2025-05-27
+Version: 1.0
+"""
 
 # Load environment variables
 load_dotenv()
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='Reddit Scraper for r/PhotoshopRequest')
+    parser.add_argument(
+        '--output', 
+        '-o',
+        type=str,
+        default='data',
+        help='Output directory path (default: data)'
+    )
+    parser.add_argument(
+        '--dev-mode',
+        '-d',
+        action='store_true',
+        help='Run in development mode (limit to 3 comments)'
+    )
+    return parser.parse_args()
 
 def setup_reddit_client():
     """Initialize and return a Reddit client instance."""
@@ -374,17 +441,16 @@ def save_post_data(post_data, post_dir, dev_mode=False):
                     print("Development mode: Reached maximum comment limit (3)")
                     break
 
-def save_posts(posts, dev_mode=False):
+def save_posts(posts, output_dir, dev_mode=False):
     """Save all posts in the structured folder hierarchy."""
     saved_posts = []
     for post in posts:
         # Create base data directory
-        data_dir = "data"
-        ensure_directory_exists(data_dir)
+        ensure_directory_exists(output_dir)
         
         # Get post date and create date directory
         post_date = datetime.fromisoformat(post['created_utc']).strftime('%Y-%m-%d')
-        date_dir = os.path.join(data_dir, post_date)
+        date_dir = os.path.join(output_dir, post_date)
         ensure_directory_exists(date_dir)
         
         # Create post directory
@@ -399,6 +465,9 @@ def save_posts(posts, dev_mode=False):
 
 def main():
     try:
+        # Parse command line arguments
+        args = parse_arguments()
+        
         # Initialize OpenAI client
         openai_client = setup_openai_client()
         if not openai_client:
@@ -406,9 +475,8 @@ def main():
             return
             
         print("OpenAI client initialized successfully")
-        
-        # Set development mode (True for testing, False for production)
-        dev_mode = True
+        print(f"Output directory: {args.output}")
+        print(f"Development mode: {'Enabled' if args.dev_mode else 'Disabled'}")
         
         # Scrape the subreddit
         posts = scrape_subreddit()
@@ -418,7 +486,7 @@ def main():
             return
         
         # Save the posts in structured folders
-        saved_dirs = save_posts(posts, dev_mode)
+        saved_dirs = save_posts(posts, args.output, args.dev_mode)
         print(f"Successfully scraped {len(posts)} posts")
         print("Posts saved in the following directories:")
         for directory in saved_dirs:
