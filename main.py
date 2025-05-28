@@ -78,7 +78,8 @@ def parse_arguments():
     parser.add_argument(
         '--dev-mode',
         '-d',
-        action='store_true',
+        type=bool,
+        default=True,
         help='Run in development mode (limit to 3 comments)'
     )
     return parser.parse_args()
@@ -472,6 +473,11 @@ def save_posts(posts, output_dir, dev_mode=False):
     """Save all posts in the structured folder hierarchy."""
     saved_posts = []
     for post in posts:
+        # Check PSR-Bot status
+        if post['psr_bot_details'] and post['psr_bot_details'].get('status') == 'Solved':
+            print(f"Skipping post {post['id']} - PSR-Bot status is 'Solved'")
+            continue
+            
         # Create base data directory
         ensure_directory_exists(output_dir)
         
