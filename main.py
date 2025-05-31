@@ -15,13 +15,13 @@ import openai
 import argparse
 
 """
-Reddit Scraper for r/PhotoshopRequest
+Reddit Scraper for subreddits
 
-This script scrapes posts from r/PhotoshopRequest subreddit, focusing on paid requests.
+This script scrapes posts from subreddit based on parameters specified in command line.
 It downloads post images, comment images, and translates post content to Chinese.
 
 Features:
-- Scrapes posts with "Paid" flair
+- Scrapes posts for the specified flair
 - Downloads post images and comment images
 - Extracts PSR-Bot details (request type, status, deadlines)
 - Translates post title and content to Chinese
@@ -41,11 +41,14 @@ REDDIT_USER_AGENT=your_user_agent
 OPENAI_API_KEY=your_openai_api_key
 
 Usage:
-    python main.py [--output OUTPUT_DIR] [--dev-mode]
+    python main.py [--output OUTPUT_DIR] [--dev-mode] [--subreddit SUBREDIT_NAME] [--flair PAID|FREE] [--target-lang LANG_NAME]
 
 Arguments:
-    --output, -o    Output directory path (default: data/)
-    --dev-mode, -d  Run in development mode (limit to 3 comments)
+    --output, -o        Output directory path (default: data/)
+    --dev-mode, -d      Run in development mode (limit to 3 comments)
+    --subreddit -r      Subreddit to scrape (default: PhotoshopRequest)
+    --flair -f          Filter posts by flair (Paid, Free, or All) (default: Paid)
+    --target-lang -t  Target language for translation (default: Chinese)
 
 Output Structure:
     output_dir/
@@ -67,7 +70,7 @@ load_dotenv()
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='Reddit Scraper for r/PhotoshopRequest')
+    parser = argparse.ArgumentParser(description='Reddit Scraper for subreddits')
     parser.add_argument(
         '--output', 
         '-o',
@@ -81,6 +84,29 @@ def parse_arguments():
         type=bool,
         default=True,
         help='Run in development mode (limit to 3 comments)'
+    )
+    parser.add_argument(
+        '--subreddit',
+        '-r',
+        type=str,
+        default='PhotoshopRequest',
+        help='Subreddit to scrape (default: PhotoshopRequest)'
+    )
+    parser.add_argument(
+        '--flair',
+        '-f',
+        type=str,
+        default='Paid',
+        choices=['Paid', 'Free', 'All'],
+        help='Filter posts by flair (Paid, Free, or All) (default: Paid)'
+    )
+    parser.add_argument(
+        '--target-lang',
+        '-t',
+        type=str,
+        default='Chinese',
+        choices=['Chinese', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 'Russian'],
+        help='Target language for translation (default: Chinese)'
     )
     return parser.parse_args()
 
@@ -247,20 +273,20 @@ def get_post_images(post):
     # Remove duplicates while preserving order
     return list(dict.fromkeys(image_urls))
 
-def translate_text(text):
-    """Translate text to Chinese using OpenAI API."""
+def translate_text(text, target_lang='Chinese'):
+    """Translate text to target language using OpenAI API."""
     if not text:
         print("No text provided for translation")
         return None
     
     try:
-        print(f"Attempting to translate text: {text[:100]}...")  # Print first 100 chars for debugging
+        print(f"Attempting to translate text to {target_lang}: {text[:100]}...")  # Print first 100 chars for debugging
         
         client = setup_openai_client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a translator. Translate the following text to Chinese. Keep any URLs, usernames, and technical terms unchanged."},
+                {"role": "system", "content": f"You are a translator. Translate the following text to {target_lang}. Keep any URLs, usernames, and technical terms unchanged."},
                 {"role": "user", "content": text}
             ],
             temperature=0.3
@@ -274,7 +300,7 @@ def translate_text(text):
         print(f"Error type: {type(e)}")
         return None
 
-def get_post_details(post):
+def get_post_details(post, target_lang='Chinese'):
     """Get detailed information about a post including PSR-Bot details and translations."""
     # Get PSR-Bot comment
     post.comments.replace_more(limit=0)
@@ -309,39 +335,47 @@ def get_post_details(post):
     # Translate title and selftext
     print(f"\nTranslating content for post {post.id}")
     print("Original title:", post.title)
-    translated_title = translate_text(post.title)
-    print("Translated title:", translated_title)
+    translated_title = translate_text(post.title, target_lang)
+    print(f"Translated title ({target_lang}):", translated_title)
     
     print("\nOriginal selftext:", post.selftext[:100] + "..." if post.selftext else "No selftext")
-    translated_selftext = translate_text(post.selftext)
-    print("Translated selftext:", translated_selftext[:100] + "..." if translated_selftext else "No translation")
+    translated_selftext = translate_text(post.selftext, target_lang)
+    print(f"Translated selftext ({target_lang}):", translated_selftext[:100] + "..." if translated_selftext else "No translation")
     
     return {
         'id': post.id,
         'title': post.title,
-        'title_zh': translated_title,
+        'title_translated': translated_title,
         'author': str(post.author),
         'created_utc': datetime.fromtimestamp(post.created_utc).isoformat(),
         'score': post.score,
         'url': post.url,
         'selftext': post.selftext,
-        'selftext_zh': translated_selftext,
+        'selftext_translated': translated_selftext,
         'num_comments': post.num_comments,
         'flair': post.link_flair_text,
         'image_urls': image_urls,
-        'psr_bot_details': psr_bot_details
+        'psr_bot_details': psr_bot_details,
+        'target_language': target_lang
     }
 
-def scrape_subreddit(subreddit_name='PhotoshopRequest', limit=5):
+def scrape_subreddit(subreddit_name='PhotoshopRequest', flair_filter='Paid', target_lang='Chinese', limit=5):
     """Scrape posts from the specified subreddit."""
     reddit = setup_reddit_client()
     subreddit = reddit.subreddit(subreddit_name)
     
     posts = []
-    # Use search with flair filter to get only Paid posts
-    for post in subreddit.search('flair:"Paid"', limit=limit, sort='new'):
-        post_details = get_post_details(post)
-        posts.append(post_details)
+    
+    if flair_filter == 'All':
+        # Get all posts without flair filter
+        for post in subreddit.new(limit=limit):
+            post_details = get_post_details(post, target_lang)
+            posts.append(post_details)
+    else:
+        # Use search with flair filter
+        for post in subreddit.search(f'flair:"{flair_filter}"', limit=limit, sort='new'):
+            post_details = get_post_details(post, target_lang)
+            posts.append(post_details)
     
     return posts
 
@@ -397,13 +431,13 @@ def format_post_as_text(post_data):
     text.append(f"ID: {post_data['id']}")
     text.append(f"Author: {post_data['author']}")
     text.append(f"Title: {post_data['title']}")
-    text.append(f"Title (Chinese): {post_data['title_zh']}")
+    text.append(f"Title ({post_data['target_language']}): {post_data['title_translated']}")
     text.append(f"Created UTC: {post_data['created_utc']}")
     text.append(f"Number of Comments: {post_data['num_comments']}")
     text.append("\nOriginal Text:")
     text.append(post_data['selftext'] if post_data['selftext'] else "No text content")
-    text.append("\nTranslated Text:")
-    text.append(post_data['selftext_zh'] if post_data['selftext_zh'] else "No translation available")
+    text.append(f"\nTranslated Text ({post_data['target_language']}):")
+    text.append(post_data['selftext_translated'] if post_data['selftext_translated'] else "No translation available")
     
     if post_data['psr_bot_details']:
         text.append("\nPSR-Bot Details:")
@@ -510,9 +544,16 @@ def main():
         print("OpenAI client initialized successfully")
         print(f"Output directory: {args.output}")
         print(f"Development mode: {'Enabled' if args.dev_mode else 'Disabled'}")
+        print(f"Subreddit: r/{args.subreddit}")
+        print(f"Flair filter: {args.flair}")
+        print(f"Target language: {args.target_lang}")
         
         # Scrape the subreddit
-        posts = scrape_subreddit()
+        posts = scrape_subreddit(
+            subreddit_name=args.subreddit,
+            flair_filter=args.flair,
+            target_lang=args.target_lang
+        )
         
         if not posts:
             print("No posts found")
