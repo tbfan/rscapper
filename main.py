@@ -24,7 +24,7 @@ Features:
 - Scrapes posts for the specified flair
 - Downloads post images and comment images
 - Extracts PSR-Bot details (request type, status, deadlines)
-- Translates post title and content to Chinese
+- Translates post content to specified language
 - Organizes data in date-based directory structure
 - Supports development mode for testing
 
@@ -41,14 +41,29 @@ REDDIT_USER_AGENT=your_user_agent
 OPENAI_API_KEY=your_openai_api_key
 
 Usage:
-    python main.py [--output OUTPUT_DIR] [--dev-mode] [--subreddit SUBREDIT_NAME] [--flair PAID|FREE] [--target-lang LANG_NAME]
+    python main.py [options]
 
-Arguments:
-    --output, -o        Output directory path (default: data/)
-    --dev-mode, -d      Run in development mode (limit to 3 comments)
-    --subreddit -r      Subreddit to scrape (default: PhotoshopRequest)
-    --flair -f          Filter posts by flair (Paid, Free, or All) (default: Paid)
-    --target-lang -t  Target language for translation (default: Chinese)
+Options:
+    -h, --help            Show this help message and exit
+    -o, --output DIR      Output directory path (default: data/)
+    -d, --dev-mode        Run in development mode (limit to 3 comments)
+    -r, --subreddit NAME  Subreddit to scrape (default: PhotoshopRequest)
+    -f, --flair TYPE      Filter posts by flair (Paid, Free, or All) (default: Paid)
+    -t, --target-lang LANG Target language for translation (default: Chinese)
+    -c, --count NUM       Number of posts to download (default: 5)
+
+Examples:
+    # Show help message
+    python main.py -h
+
+    # Basic usage with defaults
+    python main.py
+
+    # Download 10 posts from r/PhotoRequest with Spanish translation
+    python main.py -r PhotoRequest -c 10 -t Spanish
+
+    # Download all free requests from r/PhotoshopRequest
+    python main.py -f Free -c 20
 
 Output Structure:
     output_dir/
@@ -72,41 +87,42 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Reddit Scraper for subreddits')
     parser.add_argument(
-        '--output', 
-        '-o',
+        '-o', '--output',
         type=str,
         default='data',
         help='Output directory path (default: data)'
     )
     parser.add_argument(
-        '--dev-mode',
-        '-d',
+        '-d', '--dev-mode',
         type=bool,
         default=True,
         help='Run in development mode (limit to 3 comments)'
     )
     parser.add_argument(
-        '--subreddit',
-        '-r',
+        '-r', '--subreddit',
         type=str,
         default='PhotoshopRequest',
         help='Subreddit to scrape (default: PhotoshopRequest)'
     )
     parser.add_argument(
-        '--flair',
-        '-f',
+        '-f', '--flair',
         type=str,
         default='Paid',
         choices=['Paid', 'Free', 'All'],
         help='Filter posts by flair (Paid, Free, or All) (default: Paid)'
     )
     parser.add_argument(
-        '--target-lang',
-        '-t',
+        '-t', '--target-lang',
         type=str,
         default='Chinese',
         choices=['Chinese', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 'Russian'],
         help='Target language for translation (default: Chinese)'
+    )
+    parser.add_argument(
+        '-c', '--count',
+        type=int,
+        default=5,
+        help='Number of posts to download (default: 5)'
     )
     return parser.parse_args()
 
@@ -547,12 +563,14 @@ def main():
         print(f"Subreddit: r/{args.subreddit}")
         print(f"Flair filter: {args.flair}")
         print(f"Target language: {args.target_lang}")
+        print(f"Number of posts to download: {args.count}")
         
         # Scrape the subreddit
         posts = scrape_subreddit(
             subreddit_name=args.subreddit,
             flair_filter=args.flair,
-            target_lang=args.target_lang
+            target_lang=args.target_lang,
+            limit=args.count
         )
         
         if not posts:
