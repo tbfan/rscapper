@@ -23,8 +23,8 @@
 - `-o OUTPUT`, `--output OUTPUT`  
   Output directory path (default: `data`).
 
-- `-d DEV_MODE`, `--dev-mode DEV_MODE`  
-  Run in development mode (limit to 3 comments).
+- `-d DEV_MODE`, `--dev-mode`  
+  Run in development mode (limit to 3 comments), skip this flag for prod mode.
 
 - `-r SUBREDDIT`, `--subreddit SUBREDDIT`  
   Subreddit to scrape (default: `PhotoshopRequest`).
