@@ -1,46 +1,143 @@
-# Rscraper: A simple subreddit scraper
-  Steve Fan @2025-05-27
+Rscraper: A Simple Subreddit Scraper & Translator
 
-# What is this?
-  I need to download some posts and images of comments from r/PhotoRequest and create this simple tool
-  Later I generalized it for any other subreddit. This tool uses Reddit's API, and as of 2023, Reddit's API  has limits.
-  Check out their terms. 
+Created by Steve Fan, 2025-05-27
 
-  This tool downloads the latest posts and images of comments, save the post in json format and text format, the title and selftext are sent to OpenAI for translation. The translation is saved in json and text file. Comment images are saved in
-  comments folder.
+⸻
 
-  You need to use your own Reddit API keys and your own Open API keys. Set them in .env file.
+📚 Project Overview
+
+Rscraper is a lightweight Python tool designed to scrape posts and comment images from any subreddit.
+
+Originally built for r/PhotoRequest, the tool has since been generalized and supports:
+	•	Downloading recent subreddit posts
+	•	Saving posts in JSON and text format
+	•	Translating post titles and selftexts via OpenAI API
+	•	Saving translations alongside original data
+	•	Downloading comment images
+
+⸻
+
+⚠️ Important Notes
+	•	This tool uses Reddit’s API, which as of 2023 has usage limitations — please review their API Terms of Service.
+	•	You must provide your own Reddit API keys and OpenAI API key — these are stored securely in a .env file.
+
+⸻
+
+✨ Features
+
+✅ Scrape posts from any subreddit
+✅ Download comment images
+✅ Save posts in both .json and .txt formats
+✅ Translate titles and selftexts with OpenAI
+✅ Save translations in both .json and .txt formats
+✅ Flexible CLI options for filtering and targeting
+✅ Simple setup with uv dependency management
+
+⸻
+
+🔧 Usage
+
+Command-line Options
+
+Option	Description
+-h, --help	Show help message and exit
+-o OUTPUT, --output OUTPUT	Output directory (default: data)
+-d DEV_MODE, --dev-mode	Run in development mode (limit to 3 comments); omit for production
+-r SUBREDDIT, --subreddit SUBREDDIT	Subreddit to scrape (default: PhotoshopRequest)
+-f {Paid,Free,All}, --flair {Paid,Free,All}	Filter posts by flair (Paid, Free, or All); default: Paid
+-t {Chinese,Spanish,French,German,Japanese,Korean,Russian}, --target-lang	Target language for translation (default: Chinese)
+-c COUNT, --count COUNT	Number of posts to download (default: 5)
 
 
-# Usage:
-**Reddit Scraper for subreddits**
+⸻
 
-## Options
+🚀 Getting Started
 
-- `-h`, `--help`  
-  Show this help message and exit.
+1️⃣ Prerequisites
+	•	Python 3.8+
+	•	uv — fast package installer (alternative to pip)
 
-- `-o OUTPUT`, `--output OUTPUT`  
-  Output directory path (default: `data`).
+2️⃣ Installation
 
-- `-d DEV_MODE`, `--dev-mode`  
-  Run in development mode (limit to 3 comments), skip this flag for prod mode.
+Clone the repo:
 
-- `-r SUBREDDIT`, `--subreddit SUBREDDIT`  
-  Subreddit to scrape (default: `PhotoshopRequest`).
+git clone https://github.com/your-username/rscraper.git
+cd rscraper
 
-- `-f {Paid,Free,All}`, `--flair {Paid,Free,All}`  
-  Filter posts by flair (`Paid`, `Free`, or `All`). Default: `Paid`.
+Install dependencies:
 
-- `-t {Chinese,Spanish,French,German,Japanese,Korean,Russian}`, `--target-lang {Chinese,Spanish,French,German,Japanese,Korean,Russian}`  
-  Target language for translation (default: `Chinese`).
+uv pip install -r requirements.txt
 
-- `-c COUNT`, `--count COUNT`  
-  Number of posts to download (default: `5`).
+3️⃣ Configure API Keys
 
-# Get started
-1. download and install uv
-2. in project folder, run `uv pip install -r requirements.txt`
-3. run command: `uv run main.py -d False -r PhotoRequest -f Paid -o ./data -t Japanese -c 10`
+Create a .env file in the project root:
 
-~ sfan
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+REDDIT_USER_AGENT=your_user_agent
+OPENAI_API_KEY=your_openai_api_key
+
+
+⸻
+
+🏃 Example Usage
+
+Basic example:
+
+uv run main.py -d False -r PhotoRequest -f Paid -o ./data -t Japanese -c 10
+
+Help screen:
+
+uv run main.py --help
+
+
+⸻
+
+📂 Output Structure
+
+/data
+    /comments
+        comment_image_1.jpg
+        comment_image_2.png
+    post_12345.json
+    post_12345.txt
+    post_12345_translated.json
+    post_12345_translated.txt
+
+
+⸻
+
+📝 License
+
+This project is released under the MIT License.
+
+⸻
+
+🤝 Contributing
+
+Contributions welcome! Feel free to open:
+	•	Issues
+	•	Pull requests
+	•	Suggestions
+
+⸻
+
+🙏 Acknowledgements
+	•	PRAW — Python Reddit API Wrapper
+	•	OpenAI API
+	•	uv
+
+⸻
+
+Happy scraping! 🚀
+~ Steve Fan (sfan)
+
+⸻
+
+If you’d like, I can also:
+✅ Auto-generate a LICENSE file
+✅ Add a .gitignore
+✅ Generate a requirements.txt
+✅ Suggest badges (PyPI version, license, stars, etc.)
+
+Want me to generate those too? Just say “yes”! 🚀✨
