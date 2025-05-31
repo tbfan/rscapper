@@ -94,8 +94,8 @@ def parse_arguments():
     )
     parser.add_argument(
         '-d', '--dev-mode',
-        type=bool,
-        default=True,
+        action='store_true',
+        default=False,
         help='Run in development mode (limit to 3 comments)'
     )
     parser.add_argument(
