@@ -300,7 +300,7 @@ def translate_text(text, target_lang='Chinese'):
         
         client = setup_openai_client()
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": f"You are a translator. Translate the following text to {target_lang}. Keep any URLs, usernames, and technical terms unchanged."},
                 {"role": "user", "content": text}
